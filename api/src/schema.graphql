@@ -1,0 +1,103 @@
+type Person {
+  uuid: String
+  name: String
+  first_name: String
+  middle_name: String
+  last_name: String
+  date_of_birth: String
+  gender: String
+  profile_image_url: String
+  resume_url: String
+  title: String
+  social_link_name: String
+  url: String
+  provider_name: String
+  video_url: String  
+}
+
+type ProjectDetail {
+  uuid: String
+  end_date: String
+  end_date_confirmed_flag: String
+  project_name: String
+  project_description: String
+  manager_name: String
+  manager_emailid: String
+  manager_country_code: String
+  manager_phone_number: String
+  project_start_date: String
+  project_end_date: String
+  current_project_flag: String
+}
+
+type Mutation {
+  MergePersonCategory(name: [String!]!): Person
+    @cypher(
+      statement: "Create (p:Person {uuid:"hwolf0610_new2",name: $personName , first_name:'harry23', middle_name:'wolf', last_name:'naruto', date_of_birth:'6/10/1996', gender:'male', profile_image_url:'http://hwolf.com/profile.png', resume_url:'http://hwolf.com', title:'senior web expert', social_link_name:'linkedin', url:'sdfsdf', provider_name:'sdfsdf', video_url:'sdfsdf'}) RETURN p"
+    )
+}
+
+type CreateMovie{
+  movieId: ID!
+  title: String
+  year: Int
+  imdbRating: Float
+}
+
+type Query {
+  personCount: Int @cypher(statement: "MATCH (p:Person) RETURN COUNT(p)")  
+}
+
+
+
+type User {
+  userId: ID!
+  name: String
+  reviews: [Review] @relation(name: "WROTE", direction: OUT)
+  avgStars: Float
+    @cypher(
+      statement: "MATCH (this)-[:WROTE]->(r:Review) RETURN toFloat(avg(r.stars))"
+    )
+  numReviews: Int
+    @cypher(statement: "MATCH (this)-[:WROTE]->(r:Review) RETURN COUNT(r)")
+  recommendations(first: Int = 3): [Business]
+    @cypher(
+      statement: "MATCH (this)-[:WROTE]->(r:Review)-[:REVIEWS]->(:Business)<-[:REVIEWS]-(:Review)<-[:WROTE]-(:User)-[:WROTE]->(:Review)-[:REVIEWS]->(rec:Business) WHERE NOT EXISTS( (this)-[:WROTE]->(:Review)-[:REVIEWS]->(rec) ) WITH rec, COUNT(*) AS num ORDER BY num DESC LIMIT $first RETURN rec"
+    )
+}
+
+type Business {
+  businessId: ID!
+  name: String!
+  address: String
+  city: String
+  state: String
+  location: Point
+  avgStars: Float
+    @cypher(
+      statement: "MATCH (this)<-[:REVIEWS]-(r:Review) RETURN coalesce(avg(r.stars),0.0)"
+    )
+  reviews: [Review] @relation(name: "REVIEWS", direction: IN)
+  categories: [Category] @relation(name: "IN_CATEGORY", direction: OUT)
+}
+
+type Review {
+  reviewId: ID!
+  stars: Float
+  text: String
+  date: Date
+  business: Business @relation(name: "REVIEWS", direction: OUT)
+  user: User @relation(name: "WROTE", direction: IN)
+}
+
+type Category {
+  name: ID!
+  businesses: [Business] @relation(name: "IN_CATEGORY", direction: IN)
+}
+
+type RatingCount {
+  stars: Float!
+  count: Int!
+}
+
+
